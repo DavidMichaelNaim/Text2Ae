@@ -31,6 +31,27 @@
         return [0, 0, 0];
     }
 
+    // Helper: Decompose Matrix to get Rotation (in Degrees)
+    function getRotation(matrix) {
+        // Matrix: [a, b, c, d, tx, ty]
+        // Rotation = atan2(b, a)
+        // Convert Radians to Degrees
+        var rad = Math.atan2(matrix.mValueB, matrix.mValueA);
+        var deg = rad * (180 / Math.PI);
+        return deg;
+    }
+
+    // Helper: Check for Drop Shadow (Basic Detection)
+    // Adobe scripts can't easily read specific effect parameters.
+    // We check if the item has any effect, or rely on visual bounds difference?
+    // For now, we set a placeholder.
+    function hasShadow(item) {
+        // This is very limited in JS. 
+        // We will default to false unless we find a specific graphic style?
+        // For V2, we will skip complex effect detection to avoid errors.
+        return false;
+    }
+
     // Iterate through ALL text frames (No filtering)
     for (var i = 0; i < textFrames.length; i++) {
         var tf = textFrames[i];
@@ -60,6 +81,21 @@
             strokeWidth = attrs.strokeWeight;
         }
 
+        // --- V2 NEW PROPERTIES ---
+
+        // 1. Opacity
+        var op = tf.opacity; // 0-100
+
+        // 2. Scaling (Character Stretch)
+        var scaleX = attrs.horizontalScale; // Default 100
+        var scaleY = attrs.verticalScale;   // Default 100
+
+        // 3. Rotation (Matrix)
+        var rot = 0;
+        if (tf.matrix) {
+            rot = getRotation(tf.matrix);
+        }
+
         // Position
         // usage of geometricBounds for accuracy
         var geo = tf.geometricBounds;
@@ -82,7 +118,13 @@
             fillColor: fillColor,
             hasStroke: hasStroke,
             strokeColor: strokeColor,
-            strokeWidth: strokeWidth
+            strokeWidth: strokeWidth,
+            // V2 Data
+            opacity: op,
+            scaleX: scaleX,
+            scaleY: scaleY,
+            rotation: rot,
+            hasShadow: false // Placeholder
         };
 
         data.push(textData);
@@ -103,7 +145,14 @@
         jsonString += '    "fillColor": [' + item.fillColor.join(",") + '],\n';
         jsonString += '    "hasStroke": ' + item.hasStroke + ',\n';
         jsonString += '    "strokeColor": [' + item.strokeColor.join(",") + '],\n';
-        jsonString += '    "strokeWidth": ' + item.strokeWidth + '\n';
+        jsonString += '    "strokeWidth": ' + item.strokeWidth + ',\n';
+
+        // V2 Fields
+        jsonString += '    "opacity": ' + item.opacity + ',\n';
+        jsonString += '    "scaleX": ' + item.scaleX + ',\n';
+        jsonString += '    "scaleY": ' + item.scaleY + ',\n';
+        jsonString += '    "rotation": ' + item.rotation + '\n';
+
         jsonString += '  }';
         if (j < data.length - 1) jsonString += ",";
         jsonString += "\n";

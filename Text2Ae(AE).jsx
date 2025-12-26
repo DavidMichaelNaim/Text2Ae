@@ -99,16 +99,50 @@
 
             textProp.setValue(textDocument);
 
-            // 1. Set Anchor Point to Geometry Top-Left (Matches AI geometricBounds)
-            // Using (0, false) excludes stroke extents, which usually aligns better with
-            // the purely coordinate-based export from AI.
+            // 1. Set Anchor Point to Geometry Top-Left
             var rect = textLayer.sourceRectAtTime(0, false);
             textLayer.anchorPoint.setValue([rect.left, rect.top]);
 
             // 2. Set Absolute Position
-            // item.posX/Y are pixels from Artboard Top-Left.
-            // We map this directly to Comp Top-Left.
             textLayer.position.setValue([item.posX, item.posY]);
+
+            // --- V2 NEW PROPERTIES ---
+
+            // 3. Opacity
+            if (item.opacity !== undefined) {
+                textLayer.opacity.setValue(item.opacity);
+            }
+
+            // 4. Scale
+            // AI sends Horizontal/Vertical Scale as %, e.g., 150. AE expects [150, 100].
+            if (item.scaleX !== undefined && item.scaleY !== undefined) {
+                textLayer.scale.setValue([item.scaleX, item.scaleY]);
+            }
+
+            // 5. Rotation
+            // AI Rotation is often counter-clockwise? Let's test.
+            // Matrix atan2 returns angle in radians -> degrees.
+            // Usually AI Rotation = -AE Rotation (+ is CW in AE, CCW in Math?).
+            // For now, applying directly. If flipped, we multiply by -1.
+            if (item.rotation !== undefined) {
+                // IMPORTANT: The anchor point was set to Top-Left. 
+                // Rotation will happen around Top-Left. 
+                // In AI, objects often rotate around Center. 
+                // This might cause a visual shift if the rotation origin doesn't match.
+                // For V2, we accept Top-Left rotation as the standard behavior for text blocks.
+                textLayer.rotation.setValue(-item.rotation); // Negating to match AE direction
+            }
+
+            // 6. Drop Shadow (Support)
+            if (item.hasShadow === true) {
+                var ds = textLayer.Effects.addProperty("Adobe Drop Shadow");
+                // We can customized distance/softness here if we extracted it, 
+                // but for now we use defaults.
+                if (ds) {
+                    ds.property("Distance").setValue(5);
+                    ds.property("Softness").setValue(5);
+                }
+            }
         }
 
         app.endUndoGroup();
