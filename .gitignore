@@ -1,0 +1,19 @@
+# Ignore legacy scripts
+Text2Ae(AI).jsx
+Text2Ae(AE).jsx
+
+# Ignore installation script
+install_scripts.bat
+
+# Ignore JSON data files
+*.json
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
