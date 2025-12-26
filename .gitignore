@@ -1,6 +1,7 @@
 # Ignore legacy scripts
 Text2Ae(AI).jsx
 Text2Ae(AE).jsx
+.gitignore
 
 # Ignore installation script
 install_scripts.bat
