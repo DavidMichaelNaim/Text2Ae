@@ -77,6 +77,12 @@
             // Basic
             textDocument.fontSize = item.size;
             textDocument.justification = ParagraphJustification.LEFT_JUSTIFY;
+
+            // Leading (Line Spacing)
+            if (item.leading !== undefined && item.leading > 0) {
+                textDocument.leading = item.leading;
+            }
+
             try { textDocument.font = item.font; } catch (e) { }
 
             // Fill
@@ -101,7 +107,7 @@
 
             // 1. Set Anchor Point to Geometry Top-Left
             var rect = textLayer.sourceRectAtTime(0, false);
-            textLayer.anchorPoint.setValue([rect.left, rect.top]);
+            textLayer.anchorPoint.setValue([rect.left + rect.width / 2, rect.top + rect.height / 2]);
 
             // 2. Set Absolute Position
             textLayer.position.setValue([item.posX, item.posY]);
@@ -131,17 +137,6 @@
                 // This might cause a visual shift if the rotation origin doesn't match.
                 // For V2, we accept Top-Left rotation as the standard behavior for text blocks.
                 textLayer.rotation.setValue(-item.rotation); // Negating to match AE direction
-            }
-
-            // 6. Drop Shadow (Support)
-            if (item.hasShadow === true) {
-                var ds = textLayer.Effects.addProperty("Adobe Drop Shadow");
-                // We can customized distance/softness here if we extracted it, 
-                // but for now we use defaults.
-                if (ds) {
-                    ds.property("Distance").setValue(5);
-                    ds.property("Softness").setValue(5);
-                }
             }
         }
 

@@ -41,10 +41,10 @@ echo Installing Text2Ae Scripts...
 echo ----------------------------------------
 
 echo.
-echo [1/2] Installing After Effects Script...
-echo Source: %SOURCE%Text2Ae(AE).jsx
+echo [1/2] Installing Text2Ae for After Effects...
+echo Source: %SOURCE%Text2Ae.jsx
 echo Dest:   %AE_DEST%
-copy /Y "%SOURCE%Text2Ae(AE).jsx" "%AE_DEST%"
+copy /Y "%SOURCE%Text2Ae.jsx" "%AE_DEST%"
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to copy to After Effects folder.
 ) else (
@@ -52,10 +52,10 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [2/2] Installing Illustrator Script...
-echo Source: %SOURCE%Text2Ae(AI).jsx
+echo [2/2] Installing Text2Ae for Illustrator...
+echo Source: %SOURCE%Text2Ae.jsx
 echo Dest:   %AI_DEST%
-copy /Y "%SOURCE%Text2Ae(AI).jsx" "%AI_DEST%"
+copy /Y "%SOURCE%Text2Ae.jsx" "%AI_DEST%"
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to copy to Illustrator folder.
 ) else (
