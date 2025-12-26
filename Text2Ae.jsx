@@ -4,6 +4,56 @@
 
 (function (thisObj) {
 
+    // ========================================================================
+    // CONFIGURATION MANAGEMENT
+    // ========================================================================
+    var CONFIG_FILE_PATH = Folder.userData.fsName + "/Text2Ae_Config.json";
+
+    var defaultConfig = {
+        showAlertInIllustrator: true,
+        showAlertInAfterEffects: true
+    };
+
+    function loadConfig() {
+        var configFile = new File(CONFIG_FILE_PATH);
+        if (configFile.exists) {
+            try {
+                configFile.open("r");
+                configFile.encoding = "UTF-8";
+                var jsonContent = configFile.read();
+                configFile.close();
+                return eval("(" + jsonContent + ")");
+            } catch (e) {
+                return defaultConfig;
+            }
+        }
+        return defaultConfig;
+    }
+
+    function saveConfig(config) {
+        try {
+            var jsonString = "{\n";
+            jsonString += '  "showAlertInIllustrator": ' + config.showAlertInIllustrator + ',\n';
+            jsonString += '  "showAlertInAfterEffects": ' + config.showAlertInAfterEffects + '\n';
+            jsonString += "}";
+
+            var configFile = new File(CONFIG_FILE_PATH);
+            configFile.open("w");
+            configFile.encoding = "UTF-8";
+            configFile.write(jsonString);
+            configFile.close();
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    var config = loadConfig();
+
+    // ========================================================================
+    // APPLICATION DETECTION
+    // ========================================================================
+
     // Detect which Adobe application is running (Safe Detection)
     var appName = "";
     try {
@@ -32,7 +82,7 @@
         runAfterEffectsImport(thisObj);
 
     } else {
-        alert("❌ Detection Failed\n\nApp Name: '" + appName + "'\n\nThis script works only in Adobe Illustrator or After Effects.");
+        alert("Detection Failed\n\nApp Name: '" + appName + "'\n\nThis script works only in Adobe Illustrator or After Effects.");
     }
 
     // ========================================================================
@@ -45,7 +95,7 @@
         try {
             var docPath = doc.fullName;
         } catch (e) {
-            alert("⚠️ Please save the Illustrator document first before exporting.");
+            alert("Please save the Illustrator document first before exporting.");
             return;
         }
 
@@ -210,10 +260,12 @@
         file.write(jsonString);
         file.close();
 
-        alert("✅ Export Complete!\n\n" +
-            "📊 Exported: " + data.length + " text items\n" +
-            "📁 Saved to: " + jsonPath + "\n\n" +
-            "Now open After Effects and run this script again to import.");
+        if (config.showAlertInIllustrator) {
+            alert("Export Complete!\n\n" +
+                "Exported: " + data.length + " text items\n" +
+                "Saved to: " + jsonPath + "\n\n" +
+                "Now open After Effects and run this script again to import.");
+        }
     }
 
     // ========================================================================
@@ -224,7 +276,7 @@
         function doImport() {
             var comp = app.project.activeItem;
             if (!comp || !(comp instanceof CompItem)) {
-                alert("⚠️ Please select or open a Composition first.");
+                alert("Please select or open a Composition first.");
                 return;
             }
 
@@ -232,7 +284,7 @@
 
             // Check if layer is selected for path detection
             if (comp.selectedLayers.length === 0) {
-                alert("⚠️ Please select the layer that corresponds to your Illustrator file (for path detection).");
+                alert("Please select the layer that corresponds to your Illustrator file (for path detection).");
                 return;
             }
 
@@ -247,14 +299,14 @@
                     if (new File(potentialPath).exists) {
                         jsonPath = potentialPath;
                     } else {
-                        alert("❌ JSON data file not found!\n\n" +
+                        alert("JSON data file not found!\n\n" +
                             "Expected at: " + potentialPath + "\n\n" +
                             "Please run the export script in Illustrator first.");
                         return;
                     }
                 }
             } else {
-                alert("⚠️ The selected layer does not have a valid source file path.");
+                alert("The selected layer does not have a valid source file path.");
                 return;
             }
 
@@ -271,7 +323,7 @@
             try {
                 textData = eval(jsonContent);
             } catch (e) {
-                alert("❌ Error parsing JSON data.\n\n" + e.toString());
+                alert("Error parsing JSON data.\n\n" + e.toString());
                 return;
             }
 
@@ -349,32 +401,82 @@
 
             app.endUndoGroup();
 
-            alert("✅ Import Complete!\n\n" +
-                "📥 Imported: " + imported + " / " + textData.length + " text layers\n\n" +
-                "Your text is now in After Effects!");
+            if (config.showAlertInAfterEffects) {
+                alert("Import Complete!\n\n" +
+                    "Imported: " + imported + " / " + textData.length + " text layers\n\n" +
+                    "Your text is now in After Effects!");
+            }
         }
 
         // Create UI Panel
-        var palette = (thisObj instanceof Panel) ? thisObj : new Window("palette", "Text2Ae", undefined, { resizeable: true });
+        var palette = (thisObj instanceof Panel) ? thisObj : new Window("palette", "Text2Ae", undefined, { resizeable: false });
 
         if (palette instanceof Window) {
             palette.text = "Text2Ae";
             palette.orientation = "column";
-            palette.alignChildren = ["center", "top"];
+            palette.alignChildren = ["fill", "top"];
             palette.spacing = 10;
             palette.margins = 16;
         } else {
             palette.orientation = "column";
-            palette.alignChildren = ["center", "top"];
+            palette.alignChildren = ["fill", "top"];
             palette.spacing = 10;
             palette.margins = 16;
         }
 
-        var infoText = palette.add("statictext", undefined, "Import text from Illustrator", { multiline: false });
-        var button1 = palette.add("button", undefined, "Import from AI", { name: "button1" });
+        // Button Group (Import + Settings)
+        var buttonGroup = palette.add("group");
+        buttonGroup.orientation = "row";
+        buttonGroup.alignChildren = ["fill", "center"];
+        buttonGroup.spacing = 5;
+
+        var button1 = buttonGroup.add("button", undefined, "Import from AI", { name: "button1" });
+        button1.preferredSize = [150, 25];
+
+        var settingsBtn = buttonGroup.add("button", undefined, "\u2699", { name: "settingsBtn" });
+        settingsBtn.preferredSize = [30, 25];
+
+        // Settings Dialog Function
+        function showSettings() {
+            var settingsDialog = new Window("dialog", "Text2Ae Settings");
+            settingsDialog.orientation = "column";
+            settingsDialog.alignChildren = ["fill", "top"];
+            settingsDialog.spacing = 10;
+            settingsDialog.margins = 16;
+
+            var checkbox1 = settingsDialog.add("checkbox", undefined, "Show alerts in Illustrator");
+            checkbox1.value = config.showAlertInIllustrator;
+
+            var checkbox2 = settingsDialog.add("checkbox", undefined, "Show alerts in After Effects");
+            checkbox2.value = config.showAlertInAfterEffects;
+
+            var btnGroup = settingsDialog.add("group");
+            btnGroup.orientation = "row";
+            btnGroup.alignChildren = ["center", "center"];
+
+            var okBtn = btnGroup.add("button", undefined, "OK");
+            var cancelBtn = btnGroup.add("button", undefined, "Cancel");
+
+            okBtn.onClick = function () {
+                config.showAlertInIllustrator = checkbox1.value;
+                config.showAlertInAfterEffects = checkbox2.value;
+                saveConfig(config);
+                settingsDialog.close();
+            };
+
+            cancelBtn.onClick = function () {
+                settingsDialog.close();
+            };
+
+            settingsDialog.show();
+        }
 
         button1.onClick = function () {
             doImport();
+        };
+
+        settingsBtn.onClick = function () {
+            showSettings();
         };
 
         if (palette instanceof Window) {
